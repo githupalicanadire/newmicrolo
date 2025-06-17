@@ -155,6 +155,22 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Add authentication debug middleware
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    var path = context.Request.Path.Value;
+
+    if (path?.Contains("signin-oidc") == true)
+    {
+        logger.LogInformation("OIDC Callback received at path: {Path}", path);
+        logger.LogInformation("Query string: {QueryString}", context.Request.QueryString);
+        logger.LogInformation("User authenticated: {IsAuthenticated}", context.User?.Identity?.IsAuthenticated);
+    }
+
+    await next();
+});
+
 // Add simple middleware to handle protected pages
 app.Use(async (context, next) =>
 {
