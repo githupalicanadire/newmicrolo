@@ -20,13 +20,11 @@ public class TestController : ControllerBase
         var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
         var userName = User?.Identity?.Name ?? "Anonymous";
 
-        var claims = User?.Claims?.Select(c => new { c.Type, c.Value }).ToList();
-
         var result = new
         {
             IsAuthenticated = isAuthenticated,
             UserName = userName,
-            Claims = claims ?? new List<object>(),
+            Claims = User?.Claims?.Select(c => new { c.Type, c.Value }) ?? Enumerable.Empty<object>(),
             AuthenticationType = User?.Identity?.AuthenticationType ?? "None",
             Timestamp = DateTime.UtcNow
         };
