@@ -37,10 +37,14 @@ builder.Services.AddAuthentication(options =>
     options.Authority = builder.Configuration["IdentityServer:BaseUrl"];
     options.ClientId = "shopping.web";
     options.ClientSecret = "secret";
-    options.ResponseType = "code";
+    options.ResponseType = OpenIdConnectResponseType.Code;
     options.SaveTokens = true;
     options.GetClaimsFromUserInfoEndpoint = true;
     options.RequireHttpsMetadata = false;
+    options.UsePkce = true;
+
+    // Clear default scopes and add our own
+    options.Scope.Clear();
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
@@ -48,33 +52,52 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("catalog.api");
     options.Scope.Add("basket.api");
     options.Scope.Add("ordering.api");
-    options.UseTokenLifetime = true;
+
+    options.UseTokenLifetime = false; // Let cookie handle lifetime
     options.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.CallbackPath = "/signin-oidc";
     options.SignedOutCallbackPath = "/signout-callback-oidc";
+    options.RemoteSignOutPath = "/signout-oidc";
+
+    // Configure token validation
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        NameClaimType = "name",
+        RoleClaimType = "role",
+        ValidateIssuer = true
+    };
+
     options.Events = new OpenIdConnectEvents
     {
         OnRedirectToIdentityProvider = context =>
         {
-            // Identity Server'a yönlendirme yapılacaksa, doğru return URL'i ayarla
-            if (!string.IsNullOrEmpty(context.Properties.RedirectUri) &&
-                !context.Properties.RedirectUri.Contains("signin-oidc"))
-            {
-                // Normal sayfa isteklerinde doğru return URL'i ayarla
-                context.ProtocolMessage.RedirectUri = $"{context.Request.Scheme}://{context.Request.Host}/signin-oidc";
-            }
+            // Ensure proper redirect URI
+            context.ProtocolMessage.RedirectUri = $"{context.Request.Scheme}://{context.Request.Host}/signin-oidc";
             return Task.CompletedTask;
         },
         OnTokenValidated = context =>
         {
-            // Token doğrulandıktan sonra başarılı login
+            // Log successful authentication
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("User {User} successfully authenticated", context.Principal?.Identity?.Name);
             return Task.CompletedTask;
         },
         OnAuthenticationFailed = context =>
         {
-            // Hata durumunda login sayfasına yönlendir
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(context.Exception, "Authentication failed");
+
             context.Response.Redirect("/Login?error=authentication_failed");
+            context.HandleResponse();
+            return Task.CompletedTask;
+        },
+        OnRemoteFailure = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(context.Failure, "Remote authentication failure");
+
+            context.Response.Redirect("/Login?error=remote_failure");
             context.HandleResponse();
             return Task.CompletedTask;
         }
