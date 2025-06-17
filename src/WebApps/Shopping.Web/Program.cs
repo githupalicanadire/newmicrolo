@@ -56,7 +56,10 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("basket.api");
     options.Scope.Add("ordering.api");
 
-    options.UseTokenLifetime = false; // Let cookie handle lifetime
+    // Force query response mode instead of form_post
+    options.ResponseMode = OpenIdConnectResponseMode.Query;
+
+    options.UseTokenLifetime = false;
     options.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.CallbackPath = "/signin-oidc";
@@ -75,13 +78,19 @@ builder.Services.AddAuthentication(options =>
     {
         OnRedirectToIdentityProvider = context =>
         {
-            // Ensure proper redirect URI
+            // Force query response mode
+            context.ProtocolMessage.ResponseMode = "query";
             context.ProtocolMessage.RedirectUri = $"{context.Request.Scheme}://{context.Request.Host}/signin-oidc";
+            return Task.CompletedTask;
+        },
+        OnAuthorizationCodeReceived = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Authorization code received successfully");
             return Task.CompletedTask;
         },
         OnTokenValidated = context =>
         {
-            // Log successful authentication
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("User {User} successfully authenticated", context.Principal?.Identity?.Name);
             return Task.CompletedTask;
@@ -89,7 +98,7 @@ builder.Services.AddAuthentication(options =>
         OnAuthenticationFailed = context =>
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(context.Exception, "Authentication failed");
+            logger.LogError(context.Exception, "Authentication failed: {Error}", context.Exception?.Message);
 
             context.Response.Redirect("/Login?error=authentication_failed");
             context.HandleResponse();
@@ -98,7 +107,7 @@ builder.Services.AddAuthentication(options =>
         OnRemoteFailure = context =>
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogError(context.Failure, "Remote authentication failure");
+            logger.LogError(context.Failure, "Remote authentication failure: {Error}", context.Failure?.Message);
 
             context.Response.Redirect("/Login?error=remote_failure");
             context.HandleResponse();

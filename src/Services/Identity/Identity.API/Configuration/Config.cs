@@ -68,6 +68,13 @@ public static class Config
                 AlwaysSendClientClaims = true,
                 AlwaysIncludeUserClaimsInIdToken = true,
 
+                // Fix response mode and callback handling
+                AllowedCorsOrigins =
+                {
+                    "http://localhost:6005",
+                    "https://localhost:6005"
+                },
+
                 RedirectUris =
                 {
                     "http://localhost:6005/signin-oidc",
