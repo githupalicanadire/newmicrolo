@@ -35,13 +35,10 @@ public class LoginModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
-        // Get the return URL from TempData or default to Index
-        var returnUrl = TempData["ReturnUrl"]?.ToString() ?? "/";
+        // Get the return URL from TempData, query string, or default to Index
+        var returnUrl = TempData["ReturnUrl"]?.ToString()
+                       ?? Request.Query["returnUrl"].FirstOrDefault()
+                       ?? "/";
 
         // Redirect to Identity Server for authentication with proper return URL
         var properties = new AuthenticationProperties
