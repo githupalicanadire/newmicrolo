@@ -64,14 +64,14 @@ public class OrderDetailModel : PageModel
             // Double-check security: ensure order belongs to current user
             if (order.CustomerId != customerGuid)
             {
-                _logger.LogWarning("User {UserId} attempted to access order {OrderId} that belongs to {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to access order {OrderId} that belongs to {OwnerId}",
                     userIdentifier, orderId, order.CustomerId);
                 TempData["ErrorMessage"] = "You don't have permission to view this order.";
                 return RedirectToPage("/OrderList");
             }
 
             Order = order;
-            CurrentUserName = _userService.GetCurrentUserName() ?? _userService.GetCurrentUserEmail() ?? "Unknown";
+            CurrentUserName = _userService.GetUserName();
 
             _logger.LogInformation("Order detail loaded successfully for user: {UserId}, order: {OrderId}", userIdentifier, orderId);
 
