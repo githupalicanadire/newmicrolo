@@ -41,12 +41,27 @@ public class AccountController : Controller
     {
         var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
 
+        // Check if user is already authenticated
+        if (User?.Identity?.IsAuthenticated == true && context != null)
+        {
+            // User is already logged in, redirect back to client
+            _logger.LogInformation("User already authenticated, redirecting to: {ReturnUrl}", returnUrl);
+            return Redirect(returnUrl ?? "http://localhost:6005/");
+        }
+
         var vm = new AccountLoginViewModel();
 
         if (context?.IdP != null && await SchemeSupportsSignOut(context.IdP))
         {
             vm.EnableLocalLogin = false;
             vm.ExternalProviders = new[] { new ExternalProvider { AuthenticationScheme = context.IdP } };
+        }
+
+        // Force response mode to query in the return URL if it contains form_post
+        if (!string.IsNullOrEmpty(returnUrl) && returnUrl.Contains("response_mode=form_post"))
+        {
+            returnUrl = returnUrl.Replace("response_mode=form_post", "response_mode=query");
+            _logger.LogInformation("Fixed return URL response mode to query: {ReturnUrl}", returnUrl);
         }
 
         ViewData["ReturnUrl"] = returnUrl;
