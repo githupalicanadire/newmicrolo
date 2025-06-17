@@ -44,15 +44,17 @@ function runDockerCompose() {
     process.exit(1);
   }
 
-  const dockerComposeCmd = spawn(
+  // First, ensure any existing containers are stopped
+  console.log("🛑 Stopping any existing containers...");
+  const stopCmd = spawn(
     "docker-compose",
     [
       "-f",
       "docker-compose.yml",
       "-f",
       "docker-compose.override.yml",
-      "up",
-      "-d",
+      "down",
+      "--remove-orphans",
     ],
     {
       cwd: dockerComposePath,
@@ -60,18 +62,62 @@ function runDockerCompose() {
     },
   );
 
-  dockerComposeCmd.on("close", (code) => {
-    if (code === 0) {
-      console.log("✅ Services started successfully!");
-      console.log("🌐 Access the application at:");
-      console.log("   - Shopping Web: http://localhost:6005");
-      console.log("   - API Gateway: http://localhost:6004");
-      console.log("   - Identity Server: http://localhost:6006");
-      console.log("   - Info Server: http://localhost:" + port);
-    } else {
-      console.error(`❌ Docker Compose exited with code ${code}`);
-      fallbackToInfoServer();
-    }
+  stopCmd.on("close", (stopCode) => {
+    console.log("🚀 Starting fresh containers...");
+
+    const dockerComposeCmd = spawn(
+      "docker-compose",
+      [
+        "-f",
+        "docker-compose.yml",
+        "-f",
+        "docker-compose.override.yml",
+        "up",
+        "-d",
+        "--build",
+      ],
+      {
+        cwd: dockerComposePath,
+        stdio: "inherit",
+      },
+    );
+
+    dockerComposeCmd.on("close", (code) => {
+      if (code === 0) {
+        console.log("✅ Services started successfully!");
+        console.log("");
+        console.log("🌐 Application URLs:");
+        console.log("   - Shopping Web: http://localhost:6005");
+        console.log("   - API Gateway: http://localhost:6004");
+        console.log("   - Identity Server: http://localhost:6006");
+        console.log("   - Info Server: http://localhost:" + port);
+        console.log("");
+        console.log("📊 Service URLs:");
+        console.log("   - Catalog API: http://localhost:6000");
+        console.log("   - Basket API: http://localhost:6001");
+        console.log("   - Discount gRPC: http://localhost:6002");
+        console.log("   - Ordering API: http://localhost:6003");
+        console.log("");
+        console.log("🗄️ Database URLs:");
+        console.log("   - PostgreSQL (Catalog): localhost:5432");
+        console.log("   - PostgreSQL (Basket): localhost:5433");
+        console.log("   - SQL Server (Orders): localhost:1433");
+        console.log("   - SQL Server (Identity): localhost:1434");
+        console.log("   - Redis: localhost:6379");
+        console.log("   - RabbitMQ: http://localhost:15672 (guest/guest)");
+        console.log("");
+        console.log(
+          "⏳ Please wait 30-60 seconds for all services to initialize...",
+        );
+
+        // Also start the info server in parallel
+        fallbackToInfoServer();
+      } else {
+        console.error(`❌ Docker Compose exited with code ${code}`);
+        console.log("📋 Starting info server as fallback...");
+        fallbackToInfoServer();
+      }
+    });
   });
 }
 
