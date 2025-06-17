@@ -47,6 +47,11 @@ builder.Services.AddIdentityServer(options =>
     options.Authentication.CookieLifetime = TimeSpan.FromHours(1);
     options.Authentication.CookieSlidingExpiration = true;
     options.Authentication.RequireAuthenticatedUserForSignOutMessage = false;
+
+    // Force response mode to query instead of form_post
+    options.Endpoints.EnableAuthorizeEndpoint = true;
+    options.Endpoints.EnableTokenEndpoint = true;
+    options.Endpoints.EnableUserInfoEndpoint = true;
 })
 .AddInMemoryIdentityResources(Config.IdentityResources)
 .AddInMemoryApiScopes(Config.ApiScopes)
