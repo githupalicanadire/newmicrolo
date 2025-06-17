@@ -42,6 +42,11 @@ builder.Services.AddIdentityServer(options =>
     options.Events.RaiseInformationEvents = true;
     options.Events.RaiseFailureEvents = true;
     options.Events.RaiseSuccessEvents = true;
+
+    // Authentication configuration
+    options.Authentication.CookieLifetime = TimeSpan.FromHours(1);
+    options.Authentication.CookieSlidingExpiration = true;
+    options.Authentication.RequireAuthenticatedUserForSignOutMessage = false;
 })
 .AddInMemoryIdentityResources(Config.IdentityResources)
 .AddInMemoryApiScopes(Config.ApiScopes)
