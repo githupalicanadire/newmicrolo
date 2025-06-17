@@ -12,6 +12,11 @@ public interface IUserService
     ClaimsPrincipal? GetCurrentUser();
     bool ValidateUserOwnership(string resourceUserId);
     string GetSecureUserIdentifier();
+
+    // Legacy method aliases for backward compatibility
+    string GetCurrentUserName();
+    string GetCurrentUserId();
+    string GetCurrentUserEmail();
 }
 
 public class UserService : IUserService
@@ -28,21 +33,21 @@ public class UserService : IUserService
     public string GetUserName()
     {
         var identity = _httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
-        
+
         if (identity != null && identity.IsAuthenticated)
         {
-            var userName = identity.FindFirst(ClaimTypes.Name)?.Value 
-                ?? identity.FindFirst("name")?.Value 
+            var userName = identity.FindFirst(ClaimTypes.Name)?.Value
+                ?? identity.FindFirst("name")?.Value
                 ?? identity.FindFirst("preferred_username")?.Value
                 ?? identity.FindFirst(ClaimTypes.Email)?.Value;
-                
+
             if (!string.IsNullOrEmpty(userName))
             {
                 _logger.LogDebug("Retrieved username: {UserName}", userName);
                 return userName;
             }
         }
-        
+
         _logger.LogDebug("User not authenticated or username not found, returning Anonymous");
         return "Anonymous";
     }
@@ -50,27 +55,27 @@ public class UserService : IUserService
     public string GetUserId()
     {
         var identity = _httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
-        
+
         if (identity != null && identity.IsAuthenticated)
         {
-            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? identity.FindFirst("sub")?.Value 
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? identity.FindFirst("sub")?.Value
                 ?? identity.FindFirst("user_id")?.Value;
-                
+
             if (!string.IsNullOrEmpty(userId))
             {
                 _logger.LogDebug("Retrieved user ID: {UserId}", userId);
                 return userId;
             }
         }
-        
+
         // For development/testing - generate consistent ID based on email
         var email = GetUserEmail();
         if (!string.IsNullOrEmpty(email) && email != "anonymous@test.com")
         {
             return GenerateConsistentIdFromEmail(email);
         }
-        
+
         _logger.LogDebug("User ID not found, returning default");
         return "anonymous_user";
     }
@@ -78,19 +83,19 @@ public class UserService : IUserService
     public string GetUserEmail()
     {
         var identity = _httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
-        
+
         if (identity != null && identity.IsAuthenticated)
         {
-            var email = identity.FindFirst(ClaimTypes.Email)?.Value 
+            var email = identity.FindFirst(ClaimTypes.Email)?.Value
                 ?? identity.FindFirst("email")?.Value;
-                
+
             if (!string.IsNullOrEmpty(email))
             {
                 _logger.LogDebug("Retrieved user email: {Email}", email);
                 return email;
             }
         }
-        
+
         _logger.LogDebug("User email not found, returning default");
         return "anonymous@test.com";
     }
@@ -98,19 +103,19 @@ public class UserService : IUserService
     public Guid GetCustomerId()
     {
         var userId = GetUserId();
-        
+
         // Try to parse as GUID first
         if (Guid.TryParse(userId, out var guidId))
         {
             return guidId;
         }
-        
+
         // Generate consistent GUID from user identifier
         if (!string.IsNullOrEmpty(userId) && userId != "anonymous_user")
         {
             return GenerateConsistentGuidFromString(userId);
         }
-        
+
         // Default anonymous customer ID
         return Guid.Parse("00000000-0000-0000-0000-000000000001");
     }
@@ -132,10 +137,10 @@ public class UserService : IUserService
         var currentUserId = GetUserId();
         var isValid = !string.IsNullOrEmpty(currentUserId) &&
                currentUserId.Equals(resourceUserId, StringComparison.OrdinalIgnoreCase);
-        
-        _logger.LogDebug("User ownership validation - Current: {CurrentUserId}, Resource: {ResourceUserId}, Valid: {IsValid}", 
+
+        _logger.LogDebug("User ownership validation - Current: {CurrentUserId}, Resource: {ResourceUserId}, Valid: {IsValid}",
             currentUserId, resourceUserId, isValid);
-            
+
         return isValid;
     }
 
@@ -169,4 +174,9 @@ public class UserService : IUserService
         var guidBytes = hash.Take(16).ToArray();
         return new Guid(guidBytes);
     }
+
+    // Legacy method implementations for backward compatibility
+    public string GetCurrentUserName() => GetUserName();
+    public string GetCurrentUserId() => GetUserId();
+    public string GetCurrentUserEmail() => GetUserEmail();
 }

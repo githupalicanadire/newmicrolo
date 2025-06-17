@@ -27,7 +27,7 @@ public class LoginModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public IActionResult OnPost()
     {
         // If user is already authenticated, redirect to home
         if (User.Identity?.IsAuthenticated == true)

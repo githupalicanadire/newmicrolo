@@ -110,9 +110,9 @@
                                 <div class="card-body">
                                     <h6>Current Request Info:</h6>
                                     <ul class="list-unstyled">
-                                        <li><strong>Host:</strong> @Context.Request.Host</li>
-                                        <li><strong>Scheme:</strong> @Context.Request.Scheme</li>
-                                        <li><strong>Path:</strong> @Context.Request.Path</li>
+                                        <li><strong>Host:</strong> @HttpContext.Request.Host</li>
+                                        <li><strong>Scheme:</strong> @HttpContext.Request.Scheme</li>
+                                        <li><strong>Path:</strong> @HttpContext.Request.Path</li>
                                     </ul>
                                 </div>
                             </div>
@@ -137,19 +137,19 @@
         border: none;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    
+
     .table code {
         background-color: #f8f9fa;
         padding: 2px 4px;
         border-radius: 3px;
         font-size: 0.875em;
     }
-    
+
     .alert {
         border: none;
         border-radius: 10px;
     }
-    
+
     .btn {
         border-radius: 8px;
     }

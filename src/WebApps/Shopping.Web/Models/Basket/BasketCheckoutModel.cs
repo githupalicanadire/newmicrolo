@@ -3,6 +3,7 @@ namespace Shopping.Web.Models.Basket;
 public class BasketCheckoutModel
 {
     // Customer Information
+    public Guid CustomerId { get; set; }
     public string UserName { get; set; } = default!;
     public string FirstName { get; set; } = default!;
     public string LastName { get; set; } = default!;
@@ -20,7 +21,7 @@ public class BasketCheckoutModel
     public string Expiration { get; set; } = default!;
     public string CVV { get; set; } = default!;
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.CreditCard;
-    
+
     // Order
     public decimal TotalPrice { get; set; }
 }
