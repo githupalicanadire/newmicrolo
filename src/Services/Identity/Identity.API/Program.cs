@@ -149,27 +149,38 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("AllowSpecificOrigins");
 app.UseRouting();
 
-// Add middleware to force query response mode
-app.Use(async (context, next) =>
-{
-    if (context.Request.Path.StartsWithSegments("/connect/authorize"))
-    {
-        var responseMode = context.Request.Query["response_mode"].ToString();
-        if (responseMode == "form_post")
+        // Add middleware to force query response mode
+        app.Use(async (context, next) =>
         {
-            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("Intercepting form_post and converting to query mode");
+            if (context.Request.Path.StartsWithSegments("/connect/authorize"))
+            {
+                var responseMode = context.Request.Query["response_mode"].ToString();
+                if (responseMode == "form_post")
+                {
+                    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                    logger.LogWarning("Intercepting form_post and converting to query mode");
 
-            // Create new query collection with response_mode=query
-            var queryItems = context.Request.Query.ToDictionary(x => x.Key, x => x.Value);
-            queryItems["response_mode"] = "query";
+                    // Create new query collection with response_mode=query
+                    var queryItems = new List<KeyValuePair<string, string?>>();
 
-            context.Request.QueryString = QueryString.Create(queryItems);
-        }
-    }
+                    foreach (var item in context.Request.Query)
+                    {
+                        if (item.Key == "response_mode")
+                        {
+                            queryItems.Add(new KeyValuePair<string, string?>("response_mode", "query"));
+                        }
+                        else
+                        {
+                            queryItems.Add(new KeyValuePair<string, string?>(item.Key, item.Value.ToString()));
+                        }
+                    }
 
-    await next();
-});
+                    context.Request.QueryString = QueryString.Create(queryItems);
+                }
+            }
+
+            await next();
+        });
 
 app.UseIdentityServer();
 app.UseAuthentication();
