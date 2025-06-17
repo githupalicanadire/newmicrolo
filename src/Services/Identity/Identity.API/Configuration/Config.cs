@@ -68,11 +68,16 @@ public static class Config
                 AlwaysSendClientClaims = true,
                 AlwaysIncludeUserClaimsInIdToken = true,
 
+                // Force specific response modes to prevent form_post
+                AllowedIdentityTokenSigningAlgorithms = { "RS256" },
+
                 // Fix response mode and callback handling
                 AllowedCorsOrigins =
                 {
                     "http://localhost:6005",
-                    "https://localhost:6005"
+                    "https://localhost:6005",
+                    "http://localhost:5000",
+                    "https://localhost:5000"
                 },
 
                 RedirectUris =
