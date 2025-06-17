@@ -118,7 +118,7 @@ public class UserTestModel : PageModel
             var basketCheckoutDto = new Shopping.Web.Models.Basket.BasketCheckoutModel
             {
                 UserName = userIdentifier,
-                CustomerId = Guid.Parse(userIdentifier),
+                CustomerId = _userService.GetCustomerId(),
                 TotalPrice = basket.TotalPrice,
                 FirstName = "Test",
                 LastName = "User",
