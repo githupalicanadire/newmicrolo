@@ -64,7 +64,7 @@ builder.Services.AddAuthentication(options =>
     options.RemoteSignOutPath = "/signout-oidc";
 
     // Configure token validation
-    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    options.TokenValidationParameters = new TokenValidationParameters
     {
         NameClaimType = "name",
         RoleClaimType = "role",
