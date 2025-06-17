@@ -55,8 +55,7 @@ namespace Shopping.Web.Pages
         {
             try
             {
-                var userIdentifier = userService.GetSecureUserIdentifier();
-            var userIdentifier = userService.GetUserName();
+                var userIdentifier = userService.GetUserName();
 
                 logger.LogInformation("Checkout initiated for user: {UserId}", userIdentifier);
 

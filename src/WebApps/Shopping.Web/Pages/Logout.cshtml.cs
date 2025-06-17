@@ -6,9 +6,9 @@ namespace Shopping.Web.Pages;
 
 public class LogoutModel : PageModel
 {
-    public async Task<IActionResult> OnGetAsync()
+    public IActionResult OnGet()
     {
-        return await OnPostAsync();
+        return OnPost();
     }
 
     public IActionResult OnPost()
