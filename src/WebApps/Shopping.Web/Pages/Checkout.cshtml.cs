@@ -56,7 +56,7 @@ namespace Shopping.Web.Pages
             try
             {
                 var userIdentifier = userService.GetSecureUserIdentifier();
-                var userName = userService.GetCurrentUserName() ?? userService.GetCurrentUserEmail();
+            var userIdentifier = userService.GetUserName();
 
                 logger.LogInformation("Checkout initiated for user: {UserId}", userIdentifier);
 
@@ -88,7 +88,7 @@ namespace Shopping.Web.Pages
                 }
 
                 Order.UserName = userIdentifier;
-                Order.CustomerId = customerGuid;
+                Order.CustomerId = userService.GetCustomerId();
                 Order.TotalPrice = Cart.TotalPrice;
 
                 var basketCheckoutDto = new BasketCheckoutModel
@@ -98,7 +98,7 @@ namespace Shopping.Web.Pages
                     TotalPrice = Cart.TotalPrice,
                     FirstName = Order.FirstName,
                     LastName = Order.LastName,
-                    EmailAddress = Order.EmailAddress ?? userService.GetCurrentUserEmail() ?? "",
+                    EmailAddress = Order.EmailAddress ?? userService.GetUserEmail(),
                     AddressLine = Order.AddressLine,
                     Country = Order.Country,
                     State = Order.State,
