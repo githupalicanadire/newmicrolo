@@ -27,27 +27,29 @@ public class LoginModel : PageModel
         return Page();
     }
 
-    public Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync()
     {
         // If user is already authenticated, redirect to home
         if (User.Identity?.IsAuthenticated == true)
         {
-            return Task.FromResult<IActionResult>(RedirectToPage("/Index"));
+            return RedirectToPage("/Index");
         }
 
         if (!ModelState.IsValid)
         {
-            return Task.FromResult<IActionResult>(Page());
+            return Page();
         }
 
         // Get the return URL from TempData or default to Index
-        var returnUrl = TempData["ReturnUrl"]?.ToString() ?? Url.Page("/Index");
+        var returnUrl = TempData["ReturnUrl"]?.ToString() ?? "/";
 
-        // Redirect to Identity Server for authentication
-        return Task.FromResult<IActionResult>(Challenge(new AuthenticationProperties
+        // Redirect to Identity Server for authentication with proper return URL
+        var properties = new AuthenticationProperties
         {
-            RedirectUri = returnUrl
-        }, "oidc"));
+            RedirectUri = Url.IsLocalUrl(returnUrl) ? returnUrl : "/"
+        };
+
+        return Challenge(properties, "oidc");
     }
 }
 
