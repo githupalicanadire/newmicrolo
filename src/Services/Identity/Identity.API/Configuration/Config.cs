@@ -77,6 +77,11 @@ public static class Config
 
                 PostLogoutRedirectUris =
                 {
+                    "http://localhost:6005/",
+                    "https://localhost:6005/",
+                    "http://localhost:5000/",
+                    "http://shopping.web:8080/",
+                    "https://shopping.web:8080/",
                     "http://localhost:6005/signout-callback-oidc",
                     "https://localhost:6005/signout-callback-oidc",
                     "http://localhost:5000/signout-callback-oidc",
