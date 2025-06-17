@@ -47,20 +47,32 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("basket.api");
     options.Scope.Add("ordering.api");
     options.UseTokenLifetime = true;
-    options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.CallbackPath = "/signin-oidc";
+    options.SignedOutCallbackPath = "/signout-callback-oidc";
     options.Events = new OpenIdConnectEvents
     {
         OnRedirectToIdentityProvider = context =>
         {
-            // Eğer login sayfasından geliyorsa, normal akışa devam et
-            if (context.Request.Path.StartsWithSegments("/Login"))
+            // Identity Server'a yönlendirme yapılacaksa, doğru return URL'i ayarla
+            if (!string.IsNullOrEmpty(context.Properties.RedirectUri) &&
+                !context.Properties.RedirectUri.Contains("signin-oidc"))
             {
-                return Task.CompletedTask;
+                // Normal sayfa isteklerinde doğru return URL'i ayarla
+                context.ProtocolMessage.RedirectUri = $"{context.Request.Scheme}://{context.Request.Host}/signin-oidc";
             }
-
-            // Diğer durumlarda önce login sayfasına yönlendir
-            context.Response.Redirect("/Login?returnUrl=" + Uri.EscapeDataString(context.Request.Path + context.Request.QueryString));
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            // Token doğrulandıktan sonra başarılı login
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            // Hata durumunda login sayfasına yönlendir
+            context.Response.Redirect("/Login?error=authentication_failed");
             context.HandleResponse();
             return Task.CompletedTask;
         }
