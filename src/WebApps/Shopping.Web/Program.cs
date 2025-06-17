@@ -78,9 +78,19 @@ builder.Services.AddAuthentication(options =>
     {
         OnRedirectToIdentityProvider = context =>
         {
-            // Force query response mode
+            // AGGRESSIVE: Force query response mode and clean parameters
             context.ProtocolMessage.ResponseMode = "query";
             context.ProtocolMessage.RedirectUri = $"{context.Request.Scheme}://{context.Request.Host}/signin-oidc";
+
+            // Remove any existing form_post references
+            var authorizationEndpoint = context.ProtocolMessage.CreateAuthenticationRequestUrl();
+            if (authorizationEndpoint.Contains("response_mode=form_post"))
+            {
+                authorizationEndpoint = authorizationEndpoint.Replace("response_mode=form_post", "response_mode=query");
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning("Fixed form_post in authorization endpoint");
+            }
+
             return Task.CompletedTask;
         },
         OnAuthorizationCodeReceived = context =>
