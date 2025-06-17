@@ -19,17 +19,17 @@ public class TestController : ControllerBase
     {
         var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
         var userName = User?.Identity?.Name ?? "Anonymous";
-        
+
         var result = new
         {
             IsAuthenticated = isAuthenticated,
             UserName = userName,
-            Claims = User?.Claims?.Select(c => new { c.Type, c.Value }).ToList() ?? new List<object>(),
+            Claims = User?.Claims?.Select(c => new { c.Type, c.Value }).ToList() ?? new List<dynamic>(),
             AuthenticationType = User?.Identity?.AuthenticationType ?? "None",
             Timestamp = DateTime.UtcNow
         };
 
-        _logger.LogInformation("Auth status check - Authenticated: {IsAuthenticated}, User: {UserName}", 
+        _logger.LogInformation("Auth status check - Authenticated: {IsAuthenticated}, User: {UserName}",
             isAuthenticated, userName);
 
         return Ok(result);
@@ -55,7 +55,7 @@ public class TestController : ControllerBase
         }
 
         _logger.LogInformation("Forcing query mode redirect to: {ReturnUrl}", returnUrl);
-        
+
         return Redirect(returnUrl);
     }
 }
