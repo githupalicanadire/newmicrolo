@@ -67,11 +67,14 @@ builder.Services.AddCors(options =>
             "http://localhost:6004",
             "https://localhost:6004",
             "http://localhost:6006",
-            "https://localhost:6006"
+            "https://localhost:6006",
+            "http://localhost:5000",
+            "https://localhost:5000"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .AllowCredentials();
+        .AllowCredentials()
+        .SetIsOriginAllowedToAllowWildcardSubdomains();
     });
 });
 
