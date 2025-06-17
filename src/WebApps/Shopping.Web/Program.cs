@@ -24,13 +24,15 @@ builder.Services.AddAuthentication(options =>
 })
 .AddCookie("Cookies", options =>
 {
-    options.LoginPath = "/Account/Login";
-    options.LogoutPath = "/Account/Logout";
+    options.LoginPath = "/Login";
+    options.LogoutPath = "/Logout";
     options.AccessDeniedPath = "/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromHours(1);
     options.SlidingExpiration = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.Name = "ShoppingWeb.Auth";
 })
 .AddOpenIdConnect("oidc", options =>
 {
