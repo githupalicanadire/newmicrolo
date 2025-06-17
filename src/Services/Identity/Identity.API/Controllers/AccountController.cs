@@ -111,10 +111,15 @@ public class AccountController : Controller
 
         if (!string.IsNullOrEmpty(postLogoutRedirectUri))
         {
-            return Redirect(postLogoutRedirectUri);
+            // Ensure we're not redirecting to the Identity Server itself
+            if (!postLogoutRedirectUri.Contains("localhost:6006"))
+            {
+                return Redirect(postLogoutRedirectUri);
+            }
         }
 
-        return RedirectToAction("Index", "Home");
+        // Default redirect to client application
+        return Redirect("http://localhost:6005/");
     }
 
     [HttpGet]
