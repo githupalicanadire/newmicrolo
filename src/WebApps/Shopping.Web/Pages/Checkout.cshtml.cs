@@ -94,7 +94,7 @@ namespace Shopping.Web.Pages
                 var basketCheckoutDto = new BasketCheckoutModel
                 {
                     UserName = userIdentifier,
-                    CustomerId = customerGuid,
+                    CustomerId = userService.GetCustomerId(),
                     TotalPrice = Cart.TotalPrice,
                     FirstName = Order.FirstName,
                     LastName = Order.LastName,
