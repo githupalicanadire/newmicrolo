@@ -71,15 +71,23 @@ public class AccountController : Controller
 
                     if (context != null && !string.IsNullOrEmpty(returnUrl))
                     {
+                        // Log the redirect for debugging
+                        _logger.LogInformation("Login successful, redirecting to: {ReturnUrl}", returnUrl);
                         return Redirect(returnUrl);
                     }
 
-                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    if (!string.IsNullOrEmpty(returnUrl))
                     {
-                        return Redirect(returnUrl);
+                        // Check if it's a safe URL
+                        if (returnUrl.StartsWith("/") || returnUrl.Contains("localhost:6005"))
+                        {
+                            _logger.LogInformation("Login successful, redirecting to local URL: {ReturnUrl}", returnUrl);
+                            return Redirect(returnUrl);
+                        }
                     }
 
                     // Default redirect to client application
+                    _logger.LogInformation("Login successful, redirecting to default client application");
                     return Redirect("http://localhost:6005/");
                 }
 
