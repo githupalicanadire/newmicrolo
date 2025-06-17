@@ -120,7 +120,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Add custom middleware to handle unauthorized access to protected pages
+// Add simple middleware to handle protected pages
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value?.ToLower();
@@ -131,29 +131,11 @@ app.Use(async (context, next) =>
 
     if (!isAuthenticated && protectedPaths.Any(p => path?.StartsWith(p) == true))
     {
-        // Store the original URL to redirect after login
-        var returnUrl = context.Request.Path + context.Request.QueryString;
-
-        // Add a message to inform the user why they are being redirected
-        string message;
-        if (path?.StartsWith("/cart") == true)
+        // Redirect to Identity Server directly for authentication
+        await context.ChallengeAsync("oidc", new AuthenticationProperties
         {
-            message = "Please login to access your shopping cart";
-        }
-        else if (path?.StartsWith("/orderlist") == true || path?.StartsWith("/orderdetail") == true)
-        {
-            message = "Please login to view your orders";
-        }
-        else if (path?.StartsWith("/checkout") == true)
-        {
-            message = "Please login to complete your checkout";
-        }
-        else
-        {
-            message = "Please login to continue";
-        }
-
-        context.Response.Redirect($"/Login?returnUrl={Uri.EscapeDataString(returnUrl)}&message={Uri.EscapeDataString(message)}");
+            RedirectUri = context.Request.Path + context.Request.QueryString
+        });
         return;
     }
 
