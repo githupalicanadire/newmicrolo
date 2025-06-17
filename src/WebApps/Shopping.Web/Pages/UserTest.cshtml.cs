@@ -299,8 +299,8 @@ public class UserTestModel : PageModel
         try
         {
             CurrentUserId = _userService.GetSecureUserIdentifier();
-            CurrentUserEmail = _userService.GetCurrentUserEmail();
-            CurrentUserName = _userService.GetCurrentUserName();
+            CurrentUserEmail = _userService.GetUserEmail();
+            CurrentUserName = _userService.GetUserName();
 
             // Load cart items count
             var basket = await _basketService.LoadUserBasket(CurrentUserId);
