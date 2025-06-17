@@ -69,17 +69,18 @@ public class AccountController : Controller
                 {
                     await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.Client.ClientId));
 
-                    if (context != null)
-                    {
-                        return Redirect(returnUrl!);
-                    }
-
-                    if (Url.IsLocalUrl(returnUrl))
+                    if (context != null && !string.IsNullOrEmpty(returnUrl))
                     {
                         return Redirect(returnUrl);
                     }
 
-                    return Redirect("~/");
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+
+                    // Default redirect to client application
+                    return Redirect("http://localhost:6005/");
                 }
 
                 await _events.RaiseAsync(new UserLoginFailureEvent(model.Email, "invalid credentials", clientId: context?.Client.ClientId));
