@@ -131,7 +131,7 @@ public class UserTestModel : PageModel
                 CardNumber = "4111111111111111",
                 Expiration = "12/25",
                 CVV = "123",
-                PaymentMethod = 1
+                PaymentMethod = Shopping.Web.Models.Basket.PaymentMethod.CreditCard
             };
 
             var checkoutRequest = new Shopping.Web.Models.Basket.CheckoutBasketRequest(basketCheckoutDto);
