@@ -1,11 +1,15 @@
+using System.Security.Claims;
+
 namespace Shopping.Web.Services;
 
 public interface IUserService
 {
-    string? GetCurrentUserName();
-    string? GetCurrentUserId();
-    string? GetCurrentUserEmail();
+    string GetUserName();
+    string GetUserId();
+    string GetUserEmail();
     bool IsAuthenticated();
+    Guid GetCustomerId();
+    ClaimsPrincipal? GetCurrentUser();
     bool ValidateUserOwnership(string resourceUserId);
     string GetSecureUserIdentifier();
 }
@@ -13,80 +17,126 @@ public interface IUserService
 public class UserService : IUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IHttpContextAccessor httpContextAccessor)
+    public UserService(IHttpContextAccessor httpContextAccessor, ILogger<UserService> logger)
     {
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
-    public string? GetCurrentUserName()
+    public string GetUserName()
     {
-        var context = _httpContextAccessor.HttpContext;
-        if (context?.User?.Identity?.IsAuthenticated == true)
+        var identity = _httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
+        
+        if (identity != null && identity.IsAuthenticated)
         {
-            // Try to get name from claims
-            return context.User.FindFirst("name")?.Value ??
-                   context.User.FindFirst("email")?.Value ??
-                   context.User.Identity.Name;
+            var userName = identity.FindFirst(ClaimTypes.Name)?.Value 
+                ?? identity.FindFirst("name")?.Value 
+                ?? identity.FindFirst("preferred_username")?.Value
+                ?? identity.FindFirst(ClaimTypes.Email)?.Value;
+                
+            if (!string.IsNullOrEmpty(userName))
+            {
+                _logger.LogDebug("Retrieved username: {UserName}", userName);
+                return userName;
+            }
         }
-        return null;
+        
+        _logger.LogDebug("User not authenticated or username not found, returning Anonymous");
+        return "Anonymous";
     }
 
-    public string? GetCurrentUserId()
+    public string GetUserId()
     {
-        var context = _httpContextAccessor.HttpContext;
-        if (context?.User?.Identity?.IsAuthenticated == true)
+        var identity = _httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
+        
+        if (identity != null && identity.IsAuthenticated)
         {
-            // Try to get user ID from claims (sub is the standard for user ID in JWT)
-            var userId = context.User.FindFirst("sub")?.Value ??
-                        context.User.FindFirst("id")?.Value ??
-                        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                ?? identity.FindFirst("sub")?.Value 
+                ?? identity.FindFirst("user_id")?.Value;
+                
             if (!string.IsNullOrEmpty(userId))
             {
+                _logger.LogDebug("Retrieved user ID: {UserId}", userId);
                 return userId;
             }
+        }
+        
+        // For development/testing - generate consistent ID based on email
+        var email = GetUserEmail();
+        if (!string.IsNullOrEmpty(email) && email != "anonymous@test.com")
+        {
+            return GenerateConsistentIdFromEmail(email);
+        }
+        
+        _logger.LogDebug("User ID not found, returning default");
+        return "anonymous_user";
+    }
 
-            // Fallback: Generate consistent GUID from email for demo purposes
-            var email = GetCurrentUserEmail();
+    public string GetUserEmail()
+    {
+        var identity = _httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
+        
+        if (identity != null && identity.IsAuthenticated)
+        {
+            var email = identity.FindFirst(ClaimTypes.Email)?.Value 
+                ?? identity.FindFirst("email")?.Value;
+                
             if (!string.IsNullOrEmpty(email))
             {
-                return GenerateConsistentGuidFromEmail(email);
+                _logger.LogDebug("Retrieved user email: {Email}", email);
+                return email;
             }
         }
-        return null;
+        
+        _logger.LogDebug("User email not found, returning default");
+        return "anonymous@test.com";
     }
 
-    private string GenerateConsistentGuidFromEmail(string email)
+    public Guid GetCustomerId()
     {
-        // Generate a consistent GUID from email for demo purposes
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(email));
-        var guid = new Guid(hash.Take(16).ToArray());
-        return guid.ToString();
-    }
-
-    public string? GetCurrentUserEmail()
-    {
-        var context = _httpContextAccessor.HttpContext;
-        if (context?.User?.Identity?.IsAuthenticated == true)
+        var userId = GetUserId();
+        
+        // Try to parse as GUID first
+        if (Guid.TryParse(userId, out var guidId))
         {
-            return context.User.FindFirst("email")?.Value;
+            return guidId;
         }
-        return null;
+        
+        // Generate consistent GUID from user identifier
+        if (!string.IsNullOrEmpty(userId) && userId != "anonymous_user")
+        {
+            return GenerateConsistentGuidFromString(userId);
+        }
+        
+        // Default anonymous customer ID
+        return Guid.Parse("00000000-0000-0000-0000-000000000001");
     }
 
     public bool IsAuthenticated()
     {
-        var context = _httpContextAccessor.HttpContext;
-        return context?.User?.Identity?.IsAuthenticated == true;
+        var isAuth = _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+        _logger.LogDebug("User authentication status: {IsAuthenticated}", isAuth);
+        return isAuth;
+    }
+
+    public ClaimsPrincipal? GetCurrentUser()
+    {
+        return _httpContextAccessor.HttpContext?.User;
     }
 
     public bool ValidateUserOwnership(string resourceUserId)
     {
-        var currentUserId = GetCurrentUserId();
-        return !string.IsNullOrEmpty(currentUserId) &&
+        var currentUserId = GetUserId();
+        var isValid = !string.IsNullOrEmpty(currentUserId) &&
                currentUserId.Equals(resourceUserId, StringComparison.OrdinalIgnoreCase);
+        
+        _logger.LogDebug("User ownership validation - Current: {CurrentUserId}, Resource: {ResourceUserId}, Valid: {IsValid}", 
+            currentUserId, resourceUserId, isValid);
+            
+        return isValid;
     }
 
     public string GetSecureUserIdentifier()
@@ -96,12 +146,27 @@ public class UserService : IUserService
             throw new UnauthorizedAccessException("User is not authenticated");
         }
 
-        var userId = GetCurrentUserId();
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId) || userId == "anonymous_user")
         {
             throw new InvalidOperationException("Cannot determine user identity");
         }
 
         return userId;
+    }
+
+    private string GenerateConsistentIdFromEmail(string email)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(email));
+        return Convert.ToBase64String(hash)[..16]; // Take first 16 characters
+    }
+
+    private Guid GenerateConsistentGuidFromString(string input)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+        var guidBytes = hash.Take(16).ToArray();
+        return new Guid(guidBytes);
     }
 }
