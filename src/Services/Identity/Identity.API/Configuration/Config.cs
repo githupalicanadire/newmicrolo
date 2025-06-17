@@ -65,6 +65,8 @@ public static class Config
                 RequireClientSecret = false,
                 RequirePkce = true,
                 AllowOfflineAccess = true,
+                AlwaysSendClientClaims = true,
+                AlwaysIncludeUserClaimsInIdToken = true,
 
                 RedirectUris =
                 {
@@ -81,12 +83,7 @@ public static class Config
                     "https://localhost:6005/",
                     "http://localhost:5000/",
                     "http://shopping.web:8080/",
-                    "https://shopping.web:8080/",
-                    "http://localhost:6005/signout-callback-oidc",
-                    "https://localhost:6005/signout-callback-oidc",
-                    "http://localhost:5000/signout-callback-oidc",
-                    "http://shopping.web:8080/signout-callback-oidc",
-                    "https://shopping.web:8080/signout-callback-oidc"
+                    "https://shopping.web:8080/"
                 },
 
                 AllowedScopes =
@@ -103,7 +100,20 @@ public static class Config
                 },
 
                 AccessTokenLifetime = 3600,
-                RefreshTokenUsage = TokenUsage.ReUse
+                IdentityTokenLifetime = 3600,
+                RefreshTokenUsage = TokenUsage.ReUse,
+                RefreshTokenExpiration = TokenExpiration.Sliding,
+                SlidingRefreshTokenLifetime = 86400, // 24 hours
+
+                // Fix for PKCE and response mode
+                ClientSecrets = { new Secret("secret".Sha256()) },
+                AllowAccessTokensViaBrowser = true,
+
+                // Claims configuration
+                Claims = new List<ClientClaim>
+                {
+                    new ClientClaim("role", "user")
+                }
             },
 
             // Swagger UI
